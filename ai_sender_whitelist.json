@@ -1,0 +1,157 @@
+{
+  "description": "Whitelist of AI-related email senders for content curation",
+  "generated": "2026-02-28",
+  "source_email": "stephen.merritt74@gmail.com",
+  "senders": [
+    {
+      "name": "Anthropic Team",
+      "email": "notice@email.anthropic.com",
+      "domain": "email.anthropic.com",
+      "category": "AI Company"
+    },
+    {
+      "name": "Anthropic Team",
+      "email": "team@email.anthropic.com",
+      "domain": "email.anthropic.com",
+      "category": "AI Company"
+    },
+    {
+      "name": "Anthropic Team",
+      "email": "team@email2.anthropic.com",
+      "domain": "email2.anthropic.com",
+      "category": "AI Company"
+    },
+    {
+      "name": "Anthropic",
+      "email": "no-reply-1Iy6-3KITU7kunlA5r6LIQ@mail.anthropic.com",
+      "domain": "mail.anthropic.com",
+      "category": "AI Company"
+    },
+    {
+      "name": "Anthropic",
+      "email": "no-reply-2rGB4X9FyB-72s8ubQKhHA@mail.anthropic.com",
+      "domain": "mail.anthropic.com",
+      "category": "AI Company"
+    },
+    {
+      "name": "Claude Team",
+      "email": "no-reply@email.claude.com",
+      "domain": "email.claude.com",
+      "category": "AI Company"
+    },
+    {
+      "name": "OpenAI Dev Digest",
+      "email": "noreply@email.openai.com",
+      "domain": "email.openai.com",
+      "category": "AI Company"
+    },
+    {
+      "name": "DeepLearning.AI",
+      "email": "hello@deeplearning.ai",
+      "domain": "deeplearning.ai",
+      "category": "AI Education"
+    },
+    {
+      "name": "DeepLearning.AI",
+      "email": "events@deeplearning.ai",
+      "domain": "deeplearning.ai",
+      "category": "AI Education"
+    },
+    {
+      "name": "The Batch @ DeepLearning.AI",
+      "email": "thebatch@deeplearning.ai",
+      "domain": "deeplearning.ai",
+      "category": "AI Newsletter"
+    },
+    {
+      "name": "DeepLearning.AI (via Coursera)",
+      "email": "no-reply@m.mail.coursera.org",
+      "domain": "m.mail.coursera.org",
+      "category": "AI Education"
+    },
+    {
+      "name": "The AI Report",
+      "email": "the-ai-report@mail.beehiiv.com",
+      "domain": "mail.beehiiv.com",
+      "category": "AI Newsletter"
+    },
+    {
+      "name": "The Code by Superhuman",
+      "email": "superhumancode@mail.beehiiv.com",
+      "domain": "mail.beehiiv.com",
+      "category": "AI Newsletter"
+    },
+    {
+      "name": "The Code (Superhuman AI)",
+      "email": "thecode@mail.joinsuperhuman.ai",
+      "domain": "mail.joinsuperhuman.ai",
+      "category": "AI Newsletter"
+    },
+    {
+      "name": "NLP Newsletter",
+      "email": "nlpnews@substack.com",
+      "domain": "substack.com",
+      "category": "AI Newsletter"
+    },
+    {
+      "name": "Jason @ ML Mastery",
+      "email": "jason@machinelearningmastery.com",
+      "domain": "machinelearningmastery.com",
+      "category": "AI Newsletter"
+    },
+    {
+      "name": "Jacksonville Data Science, Machine Learning and AI (Meetup)",
+      "email": "info@email.meetup.com",
+      "domain": "email.meetup.com",
+      "category": "AI Community"
+    },
+    {
+      "name": "Eyal Wirsansky (JAX AI Meetup)",
+      "email": "meetup-group-jax-ai-announce@email.meetup.com",
+      "domain": "email.meetup.com",
+      "category": "AI Community"
+    },
+    {
+      "name": "Amazon Web Services",
+      "email": "aws-marketing-email-replies@amazon.com",
+      "domain": "amazon.com",
+      "category": "AI/Cloud Platform"
+    },
+    {
+      "name": "Google Alerts",
+      "email": "googlealerts-noreply@google.com",
+      "domain": "google.com",
+      "category": "AI/Cloud Platform"
+    },
+    {
+      "name": "Coursera",
+      "email": "Coursera@m.learn.coursera.org",
+      "domain": "m.learn.coursera.org",
+      "category": "AI Education"
+    },
+    {
+      "name": "Udacity",
+      "email": "hello@udacity.com",
+      "domain": "udacity.com",
+      "category": "AI Education"
+    },
+    {
+      "name": "MS in Data Science (SMU)",
+      "email": "datascience@mail.smu.edu",
+      "domain": "mail.smu.edu",
+      "category": "AI Education"
+    },
+    {
+      "name": "Posit",
+      "email": "communications@posit.co",
+      "domain": "posit.co",
+      "category": "Data Science Tools"
+    },
+    {
+      "name": "Isabella @ Posit",
+      "email": "isabella.velasquez@posit.co",
+      "domain": "posit.co",
+      "category": "Data Science Tools"
+    }
+  ]
+}
