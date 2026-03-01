@@ -152,6 +152,12 @@
       "email": "isabella.velasquez@posit.co",
       "domain": "posit.co",
       "category": "Data Science Tools"
+    },
+    {
+      "name": "NEJM AI",
+      "email": "no-reply@n2.nejm.org",
+      "domain": "n2.nejm.org",
+      "category": "AI Research"
     }
   ]
 }

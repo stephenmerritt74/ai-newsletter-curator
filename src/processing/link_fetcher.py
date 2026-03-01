@@ -4,6 +4,7 @@ import hashlib
 import logging
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -40,6 +41,8 @@ _SKIP_EXTENSIONS = {
 }
 
 _FETCH_TIMEOUT = 12.0  # seconds
+_RESOLVE_TIMEOUT = 8.0  # seconds for redirect resolution HEAD requests
+_RESOLVE_WORKERS = 10  # parallel HEAD requests when resolving redirects
 _MIN_ARTICLE_CHARS = 200  # discard pages with almost no content
 _FETCH_DELAY = 0.5  # seconds between requests (polite crawling)
 _USER_AGENT = (
@@ -81,6 +84,32 @@ def is_article_url(url: str) -> bool:
         return False
 
     return True
+
+
+def resolve_url(url: str) -> str:
+    """Follow redirects via HEAD and return the final destination URL.
+
+    Newsletter tracking links (beehiiv, mailchimp, substack, etc.) wrap the
+    real article URL in a click-tracker redirect. This resolves those to the
+    actual URL before filtering so ``is_article_url`` sees the real domain.
+
+    Falls back to the original URL if the request fails (e.g. the server
+    doesn't support HEAD) — the URL will still be attempted later by
+    ``fetch_article`` which uses a full GET with ``follow_redirects=True``.
+    """
+    try:
+        with httpx.Client(
+            follow_redirects=True,
+            timeout=_RESOLVE_TIMEOUT,
+            headers={"User-Agent": _USER_AGENT},
+        ) as client:
+            resp = client.head(url)
+            final = str(resp.url)
+            if final != url:
+                logger.debug("Redirect resolved: %s → %s", url, final)
+            return final
+    except Exception:
+        return url
 
 
 def url_to_source_id(url: str) -> str:
@@ -163,7 +192,19 @@ def fetch_articles_from_email(
     Returns:
         List of successfully fetched FetchedArticle objects.
     """
-    article_urls = [u for u in urls if is_article_url(u)]
+    # Resolve tracking redirects in parallel before filtering.
+    with ThreadPoolExecutor(max_workers=_RESOLVE_WORKERS) as pool:
+        resolved = list(pool.map(resolve_url, urls))
+
+    # Deduplicate resolved URLs (two tracking links may point to the same article).
+    seen: set[str] = set()
+    unique_resolved: list[str] = []
+    for u in resolved:
+        if u not in seen:
+            seen.add(u)
+            unique_resolved.append(u)
+
+    article_urls = [u for u in unique_resolved if is_article_url(u)]
     logger.info(
         "%d / %d links look like articles for email %s",
         len(article_urls), len(urls), source_email_message_id,
