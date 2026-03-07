@@ -125,23 +125,21 @@ class VectorStore:
         """
         try:
             results = self._collection.get(
-                where={
-                    "$and": [
-                        {"type": {"$eq": "email"}},
-                        {"received_at": {"$gte": cutoff_iso}},
-                    ]
-                },
-                limit=limit,
+                where={"type": {"$eq": "email"}},
                 include=["documents", "metadatas"],
             )
         except Exception as exc:
             raise StorageError(f"ChromaDB get_since failed: {exc}") from exc
 
+        # ChromaDB $gte only supports numbers; filter ISO strings in Python.
         output = []
         for doc_id, doc, meta in zip(
             results["ids"], results["documents"], results["metadatas"]
         ):
-            output.append({"id": doc_id, "document": doc, "metadata": meta})
+            if meta.get("received_at", "") >= cutoff_iso:
+                output.append({"id": doc_id, "document": doc, "metadata": meta})
+                if len(output) >= limit:
+                    break
         return output
 
     def count(self) -> int:
