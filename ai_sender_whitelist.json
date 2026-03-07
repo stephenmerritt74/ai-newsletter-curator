@@ -1,6 +1,6 @@
 {
   "description": "Whitelist of AI-related email senders for content curation",
-  "generated": "2026-02-28",
+  "generated": "2026-03-03",
   "source_email": "stephen.merritt74@gmail.com",
   "senders": [
     {
@@ -155,9 +155,39 @@
     },
     {
       "name": "NEJM AI",
-      "email": "no-reply@n2.nejm.org",
-      "domain": "n2.nejm.org",
+      "email": "ai-content@n.nejm.org",
+      "domain": "n.nejm.org",
       "category": "AI Research"
+    },
+    {
+      "name": "Import AI (Jack Clark)",
+      "email": "importai@substack.com",
+      "domain": "substack.com",
+      "category": "AI Newsletter"
+    },
+    {
+      "name": "MIT Technology Review - The Algorithm",
+      "email": "promotions@technologyreview.com",
+      "domain": "technologyreview.com",
+      "category": "AI Newsletter"
+    },
+    {
+      "name": "Hugging Face Daily Papers",
+      "email": "daily_papers_digest@notifications.huggingface.co",
+      "domain": "notifications.huggingface.co",
+      "category": "AI Research"
+    },
+    {
+      "name": "Lenny's Newsletter",
+      "email": "lenny@substack.com",
+      "domain": "substack.com",
+      "category": "AI Newsletter"
+    },
+    {
+      "name": "Lenny's Newsletter - How I AI",
+      "email": "lenny+how-i-ai@substack.com",
+      "domain": "substack.com",
+      "category": "AI Newsletter"
     }
   ]
 }

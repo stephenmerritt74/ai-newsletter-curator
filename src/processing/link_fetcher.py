@@ -8,6 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from urllib.parse import urlparse
 
+import fitz  # pymupdf
 import httpx
 import trafilatura
 from bs4 import BeautifulSoup
@@ -32,6 +33,7 @@ _SKIP_DOMAINS = {
     "mailchimp.com", "list-manage.com", "sendgrid.net",
     "constantcontact.com", "klaviyo.com", "beehiiv.com",
     "substack.com",
+    "amazonaws.com",  # S3 links are attachments/assets, not articles
 }
 
 # File extensions that are definitely not articles
@@ -39,6 +41,7 @@ _SKIP_EXTENSIONS = {
     ".jpg", ".jpeg", ".png", ".gif", ".svg", ".webp", ".ico",
     ".css", ".js", ".woff", ".woff2", ".mp4", ".mp3", ".zip",
 }
+# Note: .pdf is intentionally excluded — PDFs are handled via Content-Type detection
 
 _FETCH_TIMEOUT = 12.0  # seconds
 _RESOLVE_TIMEOUT = 8.0  # seconds for redirect resolution HEAD requests
@@ -132,6 +135,29 @@ def _extract_title(html: str, url: str) -> str:
     return url
 
 
+def _extract_pdf_text(content: bytes) -> str | None:
+    """Extract text from PDF bytes using pymupdf."""
+    try:
+        doc = fitz.open(stream=content, filetype="pdf")
+        pages = [page.get_text() for page in doc]
+        text = "\n\n".join(p for p in pages if p.strip())
+        return text if len(text) >= _MIN_ARTICLE_CHARS else None
+    except Exception:
+        return None
+
+
+def _extract_pdf_title(content: bytes, url: str) -> str:
+    """Extract title from PDF metadata, falling back to the URL."""
+    try:
+        doc = fitz.open(stream=content, filetype="pdf")
+        title = doc.metadata.get("title", "").strip()
+        if title:
+            return title[:200]
+    except Exception:
+        pass
+    return url
+
+
 def fetch_article(url: str) -> FetchedArticle | None:
     """Fetch *url* and extract its main article text.
 
@@ -142,6 +168,17 @@ def fetch_article(url: str) -> FetchedArticle | None:
         A FetchedArticle on success, or None if the page couldn't be fetched
         or contained too little text.
     """
+    # NEJM AI articles require JS rendering + an authenticated session.
+    if "nejm.org" in urlparse(url).netloc:
+        from src.config import settings
+        from src.processing.nejm_fetcher import fetch_nejm_article
+
+        try:
+            return fetch_nejm_article(url, settings.nejm_session_path)
+        except (FileNotFoundError, RuntimeError) as exc:
+            logger.warning("NEJM fetch skipped for %s: %s", url, exc)
+            return None
+
     try:
         with httpx.Client(
             follow_redirects=True,
@@ -150,23 +187,30 @@ def fetch_article(url: str) -> FetchedArticle | None:
         ) as client:
             response = client.get(url)
             response.raise_for_status()
-            html = response.text
     except Exception as exc:
         logger.debug("Failed to fetch %s: %s", url, exc)
         return None
 
-    text = trafilatura.extract(
-        html,
-        include_links=False,
-        include_images=False,
-        no_fallback=False,
-    )
-
-    if not text or len(text) < _MIN_ARTICLE_CHARS:
-        logger.debug("Skipping %s — insufficient content (%d chars)", url, len(text or ""))
-        return None
-
-    title = _extract_title(html, url)
+    content_type = response.headers.get("content-type", "").lower()
+    is_pdf = "application/pdf" in content_type or response.content[:4] == b"%PDF"
+    if is_pdf:
+        text = _extract_pdf_text(response.content)
+        if not text:
+            logger.debug("Skipping %s — PDF extraction failed or insufficient content", url)
+            return None
+        title = _extract_pdf_title(response.content, url)
+    else:
+        html = response.text
+        text = trafilatura.extract(
+            html,
+            include_links=False,
+            include_images=False,
+            no_fallback=False,
+        )
+        if not text or len(text) < _MIN_ARTICLE_CHARS:
+            logger.debug("Skipping %s — insufficient content (%d chars)", url, len(text or ""))
+            return None
+        title = _extract_title(html, url)
 
     return FetchedArticle(
         url=url,

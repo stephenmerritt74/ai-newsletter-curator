@@ -22,6 +22,8 @@ dependencies = [
     "html2text>=2020.1.16",
     "httpx>=0.25.0",  # For fetching linked articles
     "trafilatura>=1.6.0",  # Article content extraction from web pages
+    "pymupdf>=1.23.0",  # PDF text extraction
+    "playwright>=1.40.0",  # JS-rendered pages (e.g. NEJM AI)
     
     # Embeddings and vector storage
     "chromadb>=0.4.0",
