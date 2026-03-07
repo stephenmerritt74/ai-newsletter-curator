@@ -146,6 +146,25 @@ def _extract_pdf_text(content: bytes) -> str | None:
         return None
 
 
+def _fetch_arxiv_title(arxiv_id: str) -> str | None:
+    """Look up a paper title from the arXiv API (no auth required)."""
+    import xml.etree.ElementTree as ET
+
+    try:
+        with httpx.Client(timeout=5.0, headers={"User-Agent": _USER_AGENT}) as client:
+            resp = client.get(
+                f"https://export.arxiv.org/api/query?id_list={arxiv_id}"
+            )
+        ns = {"atom": "http://www.w3.org/2005/Atom"}
+        root = ET.fromstring(resp.text)
+        tag = root.find(".//atom:entry/atom:title", ns)
+        if tag is not None and tag.text:
+            return tag.text.strip().replace("\n", " ")[:200]
+    except Exception:
+        pass
+    return None
+
+
 def _extract_pdf_title(content: bytes, url: str) -> str:
     """Extract title from PDF metadata, falling back to the URL."""
     try:
@@ -168,6 +187,18 @@ def fetch_article(url: str) -> FetchedArticle | None:
         A FetchedArticle on success, or None if the page couldn't be fetched
         or contained too little text.
     """
+    # Rewrite to arXiv PDF for full paper text.
+    arxiv_id: str | None = None
+    parsed = urlparse(url)
+    if parsed.netloc.endswith("arxiv.org") and parsed.path.startswith("/abs/"):
+        arxiv_id = parsed.path.removeprefix("/abs/")
+        url = f"https://arxiv.org/pdf/{arxiv_id}"
+        logger.debug("arXiv abs → pdf: %s", url)
+    elif parsed.netloc == "huggingface.co" and parsed.path.startswith("/papers/"):
+        arxiv_id = parsed.path.removeprefix("/papers/")
+        url = f"https://arxiv.org/pdf/{arxiv_id}"
+        logger.debug("HuggingFace paper → arXiv pdf: %s", url)
+
     # NEJM AI articles require JS rendering + an authenticated session.
     if "nejm.org" in urlparse(url).netloc:
         from src.config import settings
@@ -198,7 +229,10 @@ def fetch_article(url: str) -> FetchedArticle | None:
         if not text:
             logger.debug("Skipping %s — PDF extraction failed or insufficient content", url)
             return None
-        title = _extract_pdf_title(response.content, url)
+        title = (
+            (arxiv_id and _fetch_arxiv_title(arxiv_id))
+            or _extract_pdf_title(response.content, url)
+        )
     else:
         html = response.text
         text = trafilatura.extract(
