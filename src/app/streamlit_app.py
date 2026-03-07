@@ -41,6 +41,9 @@ if "messages" not in st.session_state:
 if "sources" not in st.session_state:
     st.session_state.sources = {}  # turn_index → list[dict]
 
+if "digest" not in st.session_state:
+    st.session_state.digest = None
+
 
 # ---------------------------------------------------------------------------
 # Sidebar
@@ -61,6 +64,14 @@ with st.sidebar:
     show_sources = st.toggle("Show sources", value=True)
 
     st.divider()
+
+    st.subheader("Weekly Digest")
+    digest_days = st.slider("Days to summarise", min_value=1, max_value=14, value=7)
+    if st.button("Generate Digest", use_container_width=True, type="primary"):
+        with st.spinner("Summarising your last week…"):
+            st.session_state.digest = rag.weekly_digest(days=digest_days)
+
+    st.divider()
     if st.button("Clear conversation", use_container_width=True):
         st.session_state.messages = []
         st.session_state.sources = {}
@@ -77,6 +88,15 @@ with st.sidebar:
 # Chat display
 # ---------------------------------------------------------------------------
 st.title("Ask your newsletter archive")
+
+if st.session_state.digest:
+    with st.expander("Weekly Digest", expanded=True):
+        st.markdown(st.session_state.digest)
+        if st.button("Dismiss"):
+            st.session_state.digest = None
+            st.rerun()
+    st.divider()
+
 
 for i, msg in enumerate(st.session_state.messages):
     with st.chat_message(msg["role"]):

@@ -1,11 +1,13 @@
 """RAG query engine for the newsletter chat interface."""
 
 import logging
+from datetime import datetime, timedelta, timezone
 
 from openai import OpenAI
 
 from src.config import settings
 from src.processing.embeddings import EmbeddingClient
+from src.storage.database import ArticleRecord, get_session
 from src.storage.vector_store import VectorStore
 
 logger = logging.getLogger(__name__)
@@ -87,3 +89,76 @@ class NewsletterRAG:
 
         answer_text = response.choices[0].message.content or ""
         return answer_text, chunks
+
+    def weekly_digest(self, days: int = 7) -> str:
+        """Generate a structured summary of content ingested in the last *days* days.
+
+        Pulls email chunks by date from ChromaDB (one per unique source email)
+        plus article titles from SQLite, then asks the LLM to synthesize a digest.
+
+        Returns:
+            Markdown-formatted digest string.
+        """
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff_iso = cutoff.isoformat()
+
+        # --- Email chunks (one per unique source, first chunk only) -----------
+        all_chunks = self._vector_store.get_since(cutoff_iso)
+        seen_sources: set[str] = set()
+        email_chunks: list[dict] = []
+        for chunk in all_chunks:
+            src = chunk["metadata"].get("email_message_id", chunk["id"])
+            if src not in seen_sources:
+                seen_sources.add(src)
+                email_chunks.append(chunk)
+
+        # --- Article titles from SQLite ----------------------------------------
+        article_titles: list[str] = []
+        with get_session() as session:
+            articles = (
+                session.query(ArticleRecord)
+                .filter(ArticleRecord.fetched_at >= cutoff)
+                .order_by(ArticleRecord.fetched_at.desc())
+                .all()
+            )
+            article_titles = [a.title for a in articles if a.title]
+
+        if not email_chunks and not article_titles:
+            return f"No content found in the last {days} days. Run ingestion first."
+
+        # --- Build context ----------------------------------------------------
+        context_parts: list[str] = []
+        for chunk in email_chunks:
+            meta = chunk["metadata"]
+            header = f"Newsletter: {meta.get('subject', 'Unknown')} (from {meta.get('sender_email', '?')})"
+            context_parts.append(f"[{header}]\n{chunk['document']}")
+
+        if article_titles:
+            context_parts.append(
+                "[Linked articles fetched this week]\n"
+                + "\n".join(f"- {t}" for t in article_titles[:60])
+            )
+
+        context = "\n\n---\n\n".join(context_parts)
+
+        prompt = (
+            f"The following content was ingested from AI newsletters over the last {days} days.\n\n"
+            f"{context}\n\n"
+            "Write a concise weekly digest in Markdown with these sections:\n"
+            "## Key Themes\n"
+            "2-4 bullet points on the dominant topics this week.\n\n"
+            "## Notable Papers & Research\n"
+            "Bullet list of papers or studies mentioned, with a one-line summary each.\n\n"
+            "## Tools & Releases\n"
+            "Bullet list of new models, products, or open-source releases.\n\n"
+            "## Other Highlights\n"
+            "Anything else worth noting (industry news, opinion, events).\n\n"
+            "Be specific — name models, papers, and companies. Skip filler."
+        )
+
+        response = self._openai.chat.completions.create(
+            model=settings.chat_model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+        )
+        return response.choices[0].message.content or "Digest generation failed."

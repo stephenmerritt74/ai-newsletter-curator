@@ -112,6 +112,38 @@ class VectorStore:
             )
         return output
 
+    def get_since(self, cutoff_iso: str, limit: int = 80) -> list[dict]:
+        """Return email chunks received on or after *cutoff_iso*.
+
+        Args:
+            cutoff_iso: ISO-format datetime string (e.g. "2026-02-28T00:00:00").
+            limit: Maximum chunks to return (deduplication by source happens
+                in the caller).
+
+        Returns:
+            List of dicts with keys: id, document, metadata.
+        """
+        try:
+            results = self._collection.get(
+                where={
+                    "$and": [
+                        {"type": {"$eq": "email"}},
+                        {"received_at": {"$gte": cutoff_iso}},
+                    ]
+                },
+                limit=limit,
+                include=["documents", "metadatas"],
+            )
+        except Exception as exc:
+            raise StorageError(f"ChromaDB get_since failed: {exc}") from exc
+
+        output = []
+        for doc_id, doc, meta in zip(
+            results["ids"], results["documents"], results["metadatas"]
+        ):
+            output.append({"id": doc_id, "document": doc, "metadata": meta})
+        return output
+
     def count(self) -> int:
         """Return the total number of chunks stored."""
         return self._collection.count()
