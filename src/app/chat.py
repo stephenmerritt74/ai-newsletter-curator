@@ -7,6 +7,7 @@ from openai import OpenAI
 
 from src.config import settings
 from src.processing.embeddings import EmbeddingClient
+from src.processing.link_fetcher import url_to_source_id
 from src.storage.database import ArticleRecord, get_session
 from src.storage.vector_store import VectorStore
 
@@ -112,8 +113,7 @@ class NewsletterRAG:
                 seen_sources.add(src)
                 email_chunks.append(chunk)
 
-        # --- Article titles from SQLite ----------------------------------------
-        article_titles: list[str] = []
+        # --- Recent articles from SQLite + first chunk from ChromaDB -----------
         with get_session() as session:
             articles = (
                 session.query(ArticleRecord)
@@ -121,9 +121,21 @@ class NewsletterRAG:
                 .order_by(ArticleRecord.fetched_at.desc())
                 .all()
             )
-            article_titles = [a.title for a in articles if a.title]
 
-        if not email_chunks and not article_titles:
+        # Fetch the first chunk of each article so the LLM has actual content.
+        chunk_ids = [f"{url_to_source_id(a.url)}__0" for a in articles if a.url]
+        article_chunks = self._vector_store.get_chunks_by_ids(chunk_ids[:30])
+        # Build a lookup: source_id → (title, chunk_text)
+        article_lookup: dict[str, tuple[str, str]] = {}
+        for a in articles:
+            sid = url_to_source_id(a.url)
+            article_lookup[sid] = (a.title or a.url, "")
+        for chunk in article_chunks:
+            sid = chunk["metadata"].get("email_message_id", "")
+            if sid in article_lookup:
+                article_lookup[sid] = (article_lookup[sid][0], chunk["document"])
+
+        if not email_chunks and not article_lookup:
             return f"No content found in the last {days} days. Run ingestion first."
 
         # --- Build context ----------------------------------------------------
@@ -133,24 +145,26 @@ class NewsletterRAG:
             header = f"Newsletter: {meta.get('subject', 'Unknown')} (from {meta.get('sender_email', '?')})"
             context_parts.append(f"[{header}]\n{chunk['document']}")
 
-        if article_titles:
-            context_parts.append(
-                "[Linked articles fetched this week]\n"
-                + "\n".join(f"- {t}" for t in article_titles[:60])
-            )
+        for title, text in article_lookup.values():
+            if text:
+                context_parts.append(f"[Article: {title}]\n{text}")
+            else:
+                context_parts.append(f"[Article: {title}]")
 
         context = "\n\n---\n\n".join(context_parts)
 
         prompt = (
             f"The following content was ingested from AI newsletters over the last {days} days.\n\n"
             f"{context}\n\n"
-            "Write a concise weekly digest in Markdown with these sections:\n"
+            "Write a weekly digest in Markdown with these sections:\n\n"
             "## Key Themes\n"
             "2-4 bullet points on the dominant topics this week.\n\n"
             "## Notable Papers & Research\n"
-            "Bullet list of papers or studies mentioned, with a one-line summary each.\n\n"
+            "For each paper: **Title** — 3-4 sentences covering the problem it addresses, "
+            "the approach or method, the key finding or result, and why it matters. "
+            "Include all papers you can find in the context.\n\n"
             "## Tools & Releases\n"
-            "Bullet list of new models, products, or open-source releases.\n\n"
+            "Bullet list of new models, products, or open-source releases with a 1-2 sentence description each.\n\n"
             "## Other Highlights\n"
             "Anything else worth noting (industry news, opinion, events).\n\n"
             "Be specific — name models, papers, and companies. Skip filler."

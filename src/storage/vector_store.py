@@ -142,6 +142,29 @@ class VectorStore:
                     break
         return output
 
+    def get_chunks_by_ids(self, ids: list[str]) -> list[dict]:
+        """Fetch specific chunks by their ChromaDB IDs (silently skips missing IDs).
+
+        Args:
+            ids: List of ChromaDB chunk IDs.
+
+        Returns:
+            List of dicts with keys: id, document, metadata.
+        """
+        if not ids:
+            return []
+        try:
+            results = self._collection.get(ids=ids, include=["documents", "metadatas"])
+        except Exception as exc:
+            raise StorageError(f"ChromaDB get by IDs failed: {exc}") from exc
+
+        return [
+            {"id": doc_id, "document": doc, "metadata": meta}
+            for doc_id, doc, meta in zip(
+                results["ids"], results["documents"], results["metadatas"]
+            )
+        ]
+
     def count(self) -> int:
         """Return the total number of chunks stored."""
         return self._collection.count()
