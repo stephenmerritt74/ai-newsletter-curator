@@ -34,6 +34,7 @@ _SKIP_DOMAINS = {
     "constantcontact.com", "klaviyo.com", "beehiiv.com",
     "substack.com",
     "amazonaws.com",  # S3 links are attachments/assets, not articles
+    "nejm.org",  # Cloudflare + SSO blocks automated fetching; email body has abstracts
 }
 
 # File extensions that are definitely not articles
@@ -198,17 +199,6 @@ def fetch_article(url: str) -> FetchedArticle | None:
         arxiv_id = parsed.path.removeprefix("/papers/")
         url = f"https://arxiv.org/pdf/{arxiv_id}"
         logger.debug("HuggingFace paper → arXiv pdf: %s", url)
-
-    # NEJM AI articles require JS rendering + an authenticated session.
-    if "nejm.org" in urlparse(url).netloc:
-        from src.config import settings
-        from src.processing.nejm_fetcher import fetch_nejm_article
-
-        try:
-            return fetch_nejm_article(url, settings.nejm_session_path)
-        except (FileNotFoundError, RuntimeError) as exc:
-            logger.warning("NEJM fetch skipped for %s: %s", url, exc)
-            return None
 
     try:
         with httpx.Client(

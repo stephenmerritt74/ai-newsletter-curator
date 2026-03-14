@@ -21,7 +21,6 @@ class Settings(BaseSettings):
     # Storage paths
     chroma_db_path: Path = Path("./chroma_db")
     sqlite_db_path: Path = Path("./data/curator.db")
-    nejm_session_path: Path = Path("data/nejm_session.json")
 
     # Embedding settings
     embedding_model: str = "text-embedding-3-small"
