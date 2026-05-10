@@ -43,8 +43,16 @@ def get_credentials() -> Credentials:
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             print("↻ Refreshing expired token...")
-            creds.refresh(Request())
-        else:
+            try:
+                creds.refresh(Request())
+            except Exception as e:
+                if "invalid_grant" in str(e):
+                    print("✗ Token expired/revoked — deleting token and re-authenticating...")
+                    token_path.unlink()
+                    creds = None
+                else:
+                    raise
+        if not creds:
             if not creds_path.exists():
                 print(f"✗ Credentials file not found: {creds_path}")
                 print("\nMake sure you've:")

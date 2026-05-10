@@ -25,7 +25,7 @@ def _chunk_text(text: str, message_id: str, chunk_size: int) -> list[TextChunk]:
         List of TextChunk objects.
     """
     enc = tiktoken.get_encoding("cl100k_base")
-    tokens = enc.encode(text)
+    tokens = enc.encode(text, disallowed_special=())
 
     chunks: list[TextChunk] = []
     for i, start in enumerate(range(0, len(tokens), chunk_size)):
