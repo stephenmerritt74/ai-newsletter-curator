@@ -15,7 +15,7 @@ from rich.console import Console
 from rich.logging import RichHandler
 
 from src.exceptions import CuratorError
-from src.ingestion.gmail_client import GmailClient
+from src.ingestion.gmail_imap_client import GmailImapClient
 from src.ingestion.whitelist import SenderWhitelist
 from src.ingestion.yahoo_client import YahooClient
 from src.models import RawEmail
@@ -190,7 +190,7 @@ def main() -> None:
     if args.source in ("gmail", "all"):
         console.print("[bold]Fetching Gmail emails...[/bold]")
         try:
-            client = GmailClient()
+            client = GmailImapClient()
             emails = client.fetch_emails(days=args.days)
             filtered = [e for e in emails if whitelist.is_allowed(e.sender_email)]
             console.print(

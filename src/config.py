@@ -6,14 +6,18 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    # Gmail OAuth
-    gmail_credentials_path: Path = Path("credentials.json")
-    gmail_token_path: Path = Path("token.json")
+    # Gmail IMAP (App Password — no OAuth, no token expiry)
+    gmail_email: str = ""
+    gmail_app_password: str = ""
 
     # Yahoo IMAP
     yahoo_email: str = ""
     yahoo_app_password: str = ""
     yahoo_folder: str = "INBOX"
+
+    # Telegram (for digest delivery)
+    telegram_bot_token: str = ""
+    telegram_chat_id: str = ""
 
     # OpenAI
     openai_api_key: str = ""
