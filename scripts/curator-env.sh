@@ -73,6 +73,6 @@ else
   export ANTHROPIC_API_KEY
   export TELEGRAM_BOT_TOKEN
   export TELEGRAM_CHAT_ID="8676616323"
-  export CHROMA_DB_PATH="${PROJECT_DIR}/chroma_db"
-  export SQLITE_DB_PATH="${PROJECT_DIR}/data/curator.db"
+  export CHROMA_DB_PATH="/Users/merrittocracyclaw/ai-newsletter-curator/chroma_db"
+  export SQLITE_DB_PATH="/Users/merrittocracyclaw/ai-newsletter-curator/data/curator.db"
 fi

@@ -75,8 +75,14 @@ class GmailImapClient:
         elif received_at.tzinfo is None:
             received_at = received_at.replace(tzinfo=timezone.utc)
 
+        # Use the RFC 2822 Message-ID header as the dedup key — IMAP UIDs are
+        # per-mailbox and collide across accounts. Fall back to a uid+account
+        # combo only if the header is missing.
+        rfc_message_id = (msg.headers.get("message-id", [""])[0] or "").strip()
+        dedup_id = rfc_message_id if rfc_message_id else f"{self._email}:{msg.uid}"
+
         return RawEmail(
-            message_id=msg.uid or msg.message_id or "",
+            message_id=dedup_id,
             source=EmailSource.GMAIL,
             subject=msg.subject or "(no subject)",
             sender=msg.from_ or "",
