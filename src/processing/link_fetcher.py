@@ -91,15 +91,18 @@ def is_article_url(url: str) -> bool:
 
 
 def resolve_url(url: str) -> str:
-    """Follow redirects via HEAD and return the final destination URL.
+    """Follow redirects and return the final destination URL.
 
-    Newsletter tracking links (beehiiv, mailchimp, substack, etc.) wrap the
+    Newsletter tracking links (Mailgun, Beehiiv, MailChimp, etc.) wrap the
     real article URL in a click-tracker redirect. This resolves those to the
     actual URL before filtering so ``is_article_url`` sees the real domain.
 
-    Falls back to the original URL if the request fails (e.g. the server
-    doesn't support HEAD) — the URL will still be attempted later by
-    ``fetch_article`` which uses a full GET with ``follow_redirects=True``.
+    Tries HEAD first (fast, no body). Many tracking servers only redirect on
+    GET (they need a full request to log the click), so if HEAD does not move
+    the URL we retry with a streaming GET which follows the redirect chain
+    without downloading the response body.
+
+    Falls back to the original URL on any failure.
     """
     try:
         with httpx.Client(
@@ -110,7 +113,13 @@ def resolve_url(url: str) -> str:
             resp = client.head(url)
             final = str(resp.url)
             if final != url:
-                logger.debug("Redirect resolved: %s → %s", url, final)
+                logger.debug("Redirect resolved (HEAD): %s -> %s", url, final)
+                return final
+            # HEAD did not redirect — fall back to streaming GET.
+            with client.stream("GET", url) as resp:
+                final = str(resp.url)
+            if final != url:
+                logger.debug("Redirect resolved (GET): %s -> %s", url, final)
             return final
     except Exception:
         return url
