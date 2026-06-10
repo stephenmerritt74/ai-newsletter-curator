@@ -14,6 +14,7 @@ import sys
 from rich.console import Console
 from rich.logging import RichHandler
 
+from src.config import settings
 from src.exceptions import CuratorError
 from src.ingestion.gmail_imap_client import GmailImapClient
 from src.ingestion.whitelist import SenderWhitelist
@@ -202,6 +203,23 @@ def main() -> None:
             console.print(f"[red]Gmail ingestion failed:[/red] {exc}")
             if args.source == "gmail":
                 sys.exit(1)
+
+        if settings.gmail2_email:
+            console.print("[bold]Fetching Gmail (secondary) emails...[/bold]")
+            try:
+                client2 = GmailImapClient(
+                    email_address=settings.gmail2_email,
+                    app_password=settings.gmail2_app_password,
+                )
+                emails2 = client2.fetch_emails(days=args.days)
+                filtered2 = [e for e in emails2 if whitelist.is_allowed(e.sender_email)]
+                console.print(
+                    f"  Fetched [cyan]{len(emails2)}[/cyan] Gmail (secondary) emails, "
+                    f"[cyan]{len(filtered2)}[/cyan] matched whitelist"
+                )
+                all_emails.extend(filtered2)
+            except CuratorError as exc:
+                console.print(f"[red]Gmail (secondary) ingestion failed:[/red] {exc}")
 
     if args.source in ("yahoo", "all"):
         console.print("[bold]Fetching Yahoo emails...[/bold]")

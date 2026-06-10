@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     gmail_email: str = ""
     gmail_app_password: str = ""
 
+    # Gmail IMAP (secondary account)
+    gmail2_email: str = ""
+    gmail2_app_password: str = ""
+
     # Yahoo IMAP
     yahoo_email: str = ""
     yahoo_app_password: str = ""
