@@ -20,6 +20,20 @@ This is an early-stage project for building an AI newsletter curator. Currently 
 
 The `src/` directory structure described in "Planned Architecture" below doesn't exist yet.
 
+## Operating Model
+
+This project runs across three agents — all code changes must work in both laptop (test/stage) and MacMini (production) environments:
+
+- **Manfred** (Claude Code on the user's laptop) — primary developer and main code author. Does feature work and is the primary pusher to git.
+- **Earnest** (OpenClaw Agent on MacMini) — production runner. Executes scheduled ingestion and digest delivery via shell wrappers in `scripts/`. Also pushes to main.
+- **Claude Code (laptop session)** — production perspective. Pulls before starting, flags issues back to Manfred, makes targeted production/config fixes only when needed.
+
+### Key rules
+- Pull latest before any session — Earnest or Manfred may have pushed.
+- When something looks wrong, flag it for Manfred rather than fixing it unilaterally.
+- Keep the laptop (test/stage) and MacMini (production) in sync — changes must work in both environments.
+- Gmail uses IMAP + app passwords only. No OAuth. See `src/ingestion/gmail_imap_client.py`.
+
 ## Development Commands
 
 ### Environment Setup
