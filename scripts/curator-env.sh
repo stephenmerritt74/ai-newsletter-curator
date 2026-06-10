@@ -20,6 +20,7 @@ get_secret() {
 }
 
 GMAIL_APP_PASSWORD=$(get_secret GMAIL_APP_PASSWORD)
+GMAIL2_APP_PASSWORD=$(get_secret GMAIL2_APP_PASSWORD)
 YAHOO_APP_PASSWORD=$(get_secret YAHOO_APP_PASSWORD)
 OPENAI_API_KEY=$(get_secret OPENAI_API_KEY)
 ANTHROPIC_API_KEY=$(get_secret ANTHROPIC_API_KEY)
@@ -30,6 +31,10 @@ if [ "${1:-}" = "--write" ]; then
 # Gmail IMAP (App Password — no OAuth)
 GMAIL_EMAIL=stephen.merritt74@gmail.com
 GMAIL_APP_PASSWORD=${GMAIL_APP_PASSWORD}
+
+# Gmail IMAP (secondary account)
+GMAIL2_EMAIL=themerrittocractic@gmail.com
+GMAIL2_APP_PASSWORD=${GMAIL2_APP_PASSWORD}
 
 # Yahoo IMAP
 YAHOO_EMAIL=s_merritt03@yahoo.com
@@ -59,6 +64,8 @@ EOF
 else
   export GMAIL_EMAIL="stephen.merritt74@gmail.com"
   export GMAIL_APP_PASSWORD
+  export GMAIL2_EMAIL="themerrittocractic@gmail.com"
+  export GMAIL2_APP_PASSWORD
   export YAHOO_EMAIL="s_merritt03@yahoo.com"
   export YAHOO_APP_PASSWORD
   export YAHOO_FOLDER="INBOX"
