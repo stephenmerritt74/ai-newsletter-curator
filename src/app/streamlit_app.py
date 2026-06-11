@@ -23,7 +23,7 @@ def _init_db():
     init_db()
 
 
-@st.cache_resource
+@st.cache_resource(ttl=300)
 def _get_rag() -> NewsletterRAG:
     return NewsletterRAG()
 
