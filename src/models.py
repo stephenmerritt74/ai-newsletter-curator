@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 class EmailSource(StrEnum):
     GMAIL = "gmail"
     YAHOO = "yahoo"
+    RSS = "rss"
 
 
 class ContentType(StrEnum):

@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     yahoo_app_password: str = ""
     yahoo_folder: str = "INBOX"
 
+    # RSS feeds (comma-separated Atom/RSS URLs)
+    rss_feed_urls: str = "https://rweekly.org/atom.xml"
+
     # Telegram (for digest delivery)
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""

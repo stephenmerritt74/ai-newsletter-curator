@@ -17,6 +17,10 @@ class YahooError(IngestionError):
     """Raised when Yahoo-specific operations fail."""
 
 
+class RssError(IngestionError):
+    """Raised when RSS/Atom feed fetching or parsing fails."""
+
+
 class ProcessingError(CuratorError):
     """Raised when content processing fails."""
 

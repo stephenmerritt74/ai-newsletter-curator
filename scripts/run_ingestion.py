@@ -17,6 +17,7 @@ from rich.logging import RichHandler
 from src.config import settings
 from src.exceptions import CuratorError
 from src.ingestion.gmail_imap_client import GmailImapClient
+from src.ingestion.rss_client import RssFeedClient
 from src.ingestion.whitelist import SenderWhitelist
 from src.ingestion.yahoo_client import YahooClient
 from src.models import RawEmail
@@ -165,7 +166,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--source",
-        choices=["gmail", "yahoo", "all"],
+        choices=["gmail", "yahoo", "rss", "all"],
         default="all",
         help="Which email source to ingest from (default: all)",
     )
@@ -236,6 +237,20 @@ def main() -> None:
             console.print(f"[red]Yahoo ingestion failed:[/red] {exc}")
             if args.source == "yahoo":
                 sys.exit(1)
+
+    if args.source in ("rss", "all") and settings.rss_feed_urls:
+        feed_urls = [u.strip() for u in settings.rss_feed_urls.split(",") if u.strip()]
+        for feed_url in feed_urls:
+            console.print(f"[bold]Fetching RSS feed: {feed_url}...[/bold]")
+            try:
+                rss_client = RssFeedClient(feed_url)
+                rss_emails = rss_client.fetch_emails(days=args.days)
+                console.print(f"  Fetched [cyan]{len(rss_emails)}[/cyan] entries")
+                all_emails.extend(rss_emails)
+            except CuratorError as exc:
+                console.print(f"[red]RSS ingestion failed ({feed_url}):[/red] {exc}")
+                if args.source == "rss":
+                    sys.exit(1)
 
     if not all_emails:
         console.print("[yellow]No emails fetched. Nothing to ingest.[/yellow]")
